@@ -57,6 +57,8 @@ export const RoomBookingView: React.FC<RoomBookingViewProps> = ({
     bookedBy: currentUser.name,
     contactEmail: currentUser.email,
     date: '2026-11-04',
+    startDate: '2026-11-04',
+    endDate: '2026-11-04',
     startTime: '09:00',
     endTime: '12:00',
     expectedAttendees: 30,
@@ -141,7 +143,9 @@ export const RoomBookingView: React.FC<RoomBookingViewProps> = ({
       agencyCode: formData.agencyCode,
       bookedBy: formData.bookedBy,
       contactEmail: formData.contactEmail,
-      date: formData.date,
+      date: formData.startDate,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
       startTime: formData.startTime,
       endTime: formData.endTime,
       expectedAttendees: Number(formData.expectedAttendees),
@@ -282,7 +286,7 @@ export const RoomBookingView: React.FC<RoomBookingViewProps> = ({
                   </div>
 
                   <div className="space-y-0.5 text-slate-600 font-mono text-[11px]">
-                    <div>Date: <strong>{booking.date}</strong> ({booking.startTime} - {booking.endTime})</div>
+                    <div>Date: <strong>{booking.startDate || booking.date} {booking.endDate && booking.endDate !== (booking.startDate || booking.date) ? `to ${booking.endDate}` : ''}</strong> ({booking.startTime} - {booking.endTime})</div>
                     <div>Agency: <strong>{booking.agency}</strong> ({booking.agencyCode})</div>
                     <div>Applicant: <strong>{booking.bookedBy}</strong> ({booking.expectedAttendees} attendees)</div>
                     {booking.purpose && <div className="text-slate-500 italic mt-1">"{booking.purpose}"</div>}
@@ -407,7 +411,7 @@ export const RoomBookingView: React.FC<RoomBookingViewProps> = ({
               <div className="space-y-0.5">
                 <div className="font-bold text-slate-900">{booking.eventTitle}</div>
                 <div className="text-[11px] text-slate-600 font-mono">
-                  {booking.roomName} · {booking.date} ({booking.startTime} - {booking.endTime})
+                  {booking.roomName} · {booking.startDate || booking.date}{booking.endDate && booking.endDate !== (booking.startDate || booking.date) ? ` to ${booking.endDate}` : ''} ({booking.startTime} - {booking.endTime})
                 </div>
                 <div className="text-[10px] text-slate-500">{booking.agency}</div>
               </div>
@@ -700,15 +704,28 @@ export const RoomBookingView: React.FC<RoomBookingViewProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-700">Reservation Date *</label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none font-mono"
-                    />
+                  <div className="grid grid-cols-2 gap-2 sm:col-span-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-700">Reservation Date: From *</label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value, endDate: e.target.value > formData.endDate ? e.target.value : formData.endDate })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold text-slate-700">Reservation Date: To *</label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.endDate}
+                        min={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none font-mono"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">

@@ -47,6 +47,7 @@ import { AgencyLoginView } from './components/AgencyLoginView';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(DEMO_USERS[1]); // Dechen Pem (Agency Rep)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentTab, setCurrentTab] = useState<string>('agency-login');
 
   const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
@@ -80,9 +81,17 @@ export default function App() {
   // Add new Room Booking
   const handleAddBooking = (newBookingData: Omit<RoomBooking, 'id' | 'createdAt'>): boolean => {
     const hasConflict = bookings.some((b) => {
-      if (b.roomId !== newBookingData.roomId || b.date !== newBookingData.date || b.status === 'Rejected') {
+      if (b.roomId !== newBookingData.roomId || b.status === 'Rejected') {
         return false;
       }
+      const bStart = b.startDate || b.date;
+      const bEnd = b.endDate || b.date;
+      const newStart = newBookingData.startDate || newBookingData.date;
+      const newEnd = newBookingData.endDate || newBookingData.date;
+
+      const datesOverlap = newStart <= bEnd && newEnd >= bStart;
+      if (!datesOverlap) return false;
+
       return newBookingData.startTime < b.endTime && newBookingData.endTime > b.startTime;
     });
 
@@ -242,6 +251,16 @@ export default function App() {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, read: true } : a)));
   };
 
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    setCurrentTab('dashboard');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentTab('agency-login');
+  };
+
   const unreadAlertCount = alerts.filter((a) => !a.read).length;
 
   return (
@@ -257,114 +276,137 @@ export default function App() {
         setCurrentUser={setCurrentUser}
         unreadAlertCount={unreadAlertCount}
         onOpenAlerts={() => setShowAlertsDrawer(true)}
+        isAuthenticated={isAuthenticated}
+        onLogout={handleLogout}
       />
 
-      {/* View Router */}
+      {/* View Router - Gated by Authentication */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-6">
-        {currentTab === 'dashboard' && (
-          <DashboardView
-            currentUser={currentUser}
-            rooms={rooms}
-            bookings={bookings}
-            trainings={trainings}
-            news={news}
-            cafeteria={cafeteria}
-            onNavigate={setCurrentTab}
-            onOpenBookingModal={handleOpenBookingModal}
-            onUpdateBookingStatus={handleUpdateBookingStatus}
-            onApproveAllPendingBookings={handleApproveAllPendingBookings}
-          />
-        )}
+        {!isAuthenticated ? (
+          /* Unauthenticated Users can ONLY see Login Views */
+          currentTab === 'admin' ? (
+            <AdminLoginView
+              currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
+              onLoginSuccess={handleLoginSuccess}
+            />
+          ) : (
+            <AgencyLoginView
+              currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
+              onLoginSuccess={handleLoginSuccess}
+              onNavigateToAdmin={() => setCurrentTab('admin')}
+            />
+          )
+        ) : (
+          /* Authenticated Operational Views */
+          <>
+            {currentTab === 'dashboard' && (
+              <DashboardView
+                currentUser={currentUser}
+                rooms={rooms}
+                bookings={bookings}
+                trainings={trainings}
+                news={news}
+                cafeteria={cafeteria}
+                onNavigate={setCurrentTab}
+                onOpenBookingModal={handleOpenBookingModal}
+                onUpdateBookingStatus={handleUpdateBookingStatus}
+                onApproveAllPendingBookings={handleApproveAllPendingBookings}
+              />
+            )}
 
-        {currentTab === 'admin-customizer' && (
-          <AdminFacilityCustomizer
-            currentUser={currentUser}
-            rooms={rooms}
-            setRooms={setRooms}
-            hostelRooms={hostelRooms}
-            setHostelRooms={setHostelRooms}
-            news={news}
-            setNews={setNews}
-            cafeteria={cafeteria}
-            setCafeteria={setCafeteria}
-            alerts={alerts}
-            setAlerts={setAlerts}
-          />
-        )}
+            {currentTab === 'admin-customizer' && (
+              <AdminFacilityCustomizer
+                currentUser={currentUser}
+                rooms={rooms}
+                setRooms={setRooms}
+                hostelRooms={hostelRooms}
+                setHostelRooms={setHostelRooms}
+                news={news}
+                setNews={setNews}
+                cafeteria={cafeteria}
+                setCafeteria={setCafeteria}
+                alerts={alerts}
+                setAlerts={setAlerts}
+              />
+            )}
 
-        {currentTab === 'rooms' && (
-          <RoomBookingView
-            rooms={rooms}
-            bookings={bookings}
-            currentUser={currentUser}
-            onAddBooking={handleAddBooking}
-            onUpdateBookingStatus={handleUpdateBookingStatus}
-            onApproveAllPendingBookings={handleApproveAllPendingBookings}
-            selectedRoomForModal={selectedRoomForModal}
-            isModalOpen={isBookingModalOpen}
-            onOpenModal={handleOpenBookingModal}
-            onCloseModal={handleCloseBookingModal}
-          />
-        )}
+            {currentTab === 'rooms' && (
+              <RoomBookingView
+                rooms={rooms}
+                bookings={bookings}
+                currentUser={currentUser}
+                onAddBooking={handleAddBooking}
+                onUpdateBookingStatus={handleUpdateBookingStatus}
+                onApproveAllPendingBookings={handleApproveAllPendingBookings}
+                selectedRoomForModal={selectedRoomForModal}
+                isModalOpen={isBookingModalOpen}
+                onOpenModal={handleOpenBookingModal}
+                onCloseModal={handleCloseBookingModal}
+              />
+            )}
 
-        {currentTab === 'hostel' && (
-          <HostelBookingView
-            hostelRooms={hostelRooms}
-            hostelBookings={hostelBookings}
-            currentUser={currentUser}
-            onAddHostelBooking={handleAddHostelBooking}
-            onUpdateHostelBookingStatus={handleUpdateHostelBookingStatus}
-            onApproveAllPendingHostelBookings={handleApproveAllPendingHostelBookings}
-          />
-        )}
+            {currentTab === 'hostel' && (
+              <HostelBookingView
+                hostelRooms={hostelRooms}
+                hostelBookings={hostelBookings}
+                currentUser={currentUser}
+                onAddHostelBooking={handleAddHostelBooking}
+                onUpdateHostelBookingStatus={handleUpdateHostelBookingStatus}
+                onApproveAllPendingHostelBookings={handleApproveAllPendingHostelBookings}
+              />
+            )}
 
-        {currentTab === 'trainings' && (
-          <TrainingScheduleView
-            trainings={trainings}
-            rooms={rooms}
-            currentUser={currentUser}
-            onAddTraining={handleAddTraining}
-          />
-        )}
+            {currentTab === 'trainings' && (
+              <TrainingScheduleView
+                trainings={trainings}
+                rooms={rooms}
+                currentUser={currentUser}
+                onAddTraining={handleAddTraining}
+              />
+            )}
 
-        {currentTab === 'attendance' && (
-          <AttendanceTrackingView
-            participants={participants}
-            trainings={trainings}
-            onlineStatus={onlineStatus}
-            onUpdateAttendance={handleUpdateAttendance}
-            onAddParticipant={handleAddParticipant}
-          />
-        )}
+            {currentTab === 'attendance' && (
+              <AttendanceTrackingView
+                participants={participants}
+                trainings={trainings}
+                onlineStatus={onlineStatus}
+                onUpdateAttendance={handleUpdateAttendance}
+                onAddParticipant={handleAddParticipant}
+              />
+            )}
 
-        {currentTab === 'publications' && (
-          <ResearchPublicationsView />
-        )}
+            {currentTab === 'publications' && (
+              <ResearchPublicationsView />
+            )}
 
-        {currentTab === 'reports' && (
-          <ReportsView
-            rooms={rooms}
-            bookings={bookings}
-            trainings={trainings}
-            participants={participants}
-          />
-        )}
+            {currentTab === 'reports' && (
+              <ReportsView
+                rooms={rooms}
+                bookings={bookings}
+                trainings={trainings}
+                participants={participants}
+              />
+            )}
 
-        {currentTab === 'admin' && (
-          <AdminLoginView
-            currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
-            onLoginSuccess={() => setCurrentTab('dashboard')}
-          />
-        )}
+            {currentTab === 'admin' && (
+              <AdminLoginView
+                currentUser={currentUser}
+                setCurrentUser={setCurrentUser}
+                onLoginSuccess={handleLoginSuccess}
+              />
+            )}
 
-        {currentTab === 'agency-login' && (
-          <AgencyLoginView
-            currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
-            onLoginSuccess={() => setCurrentTab('dashboard')}
-            onNavigateToAdmin={() => setCurrentTab('admin')}
-          />
+            {currentTab === 'agency-login' && (
+              <AgencyLoginView
+                currentUser={currentUser}
+                setCurrentUser={setCurrentUser}
+                onLoginSuccess={handleLoginSuccess}
+                onNavigateToAdmin={() => setCurrentTab('admin')}
+              />
+            )}
+          </>
         )}
       </main>
 

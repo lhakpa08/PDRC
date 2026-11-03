@@ -53,7 +53,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onUpdateBookingStatus,
   onApproveAllPendingBookings,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'news' | 'venues' | 'trainings' | 'activity'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'floorplan' | 'venues' | 'trainings' | 'activity'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
 
   const availableRoomsCount = rooms.filter((r) => r.status === 'Available').length;
@@ -220,6 +220,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Overview & Live Session
           </button>
           <button
+            onClick={() => setActiveSubTab('floorplan')}
+            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+              activeSubTab === 'floorplan'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Interactive Floor Plan
+          </button>
+          <button
             onClick={() => setActiveSubTab('venues')}
             className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
               activeSubTab === 'venues'
@@ -264,6 +274,110 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Tab Content: Interactive Floor Plan */}
+      {activeSubTab === 'floorplan' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 font-display flex items-center gap-2">
+                <Layers className="w-5 h-5 text-amber-600" />
+                PDRC Tsirang Real-Time Campus Floor Plan
+              </h2>
+              <p className="text-xs text-slate-500">
+                Live building layout showing vacant and occupied halls across all campus wings. Click any room for instant one-click booking.
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-mono font-medium">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-xs" /> Vacant / Available ({availableRoomsCount})
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-amber-500 shadow-xs" /> Occupied / Reserved ({occupiedRoomsCount + reservedRoomsCount})
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {Array.from(new Set(rooms.map((r) => r.floor))).map((floorName) => {
+              const floorRooms = rooms.filter((r) => r.floor === floorName);
+              return (
+                <div key={floorName} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                    <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-amber-600" />
+                      {floorName}
+                    </h3>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      {floorRooms.length} {floorRooms.length === 1 ? 'Venue' : 'Venues'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {floorRooms.map((room) => {
+                      const isAvailable = room.status === 'Available';
+                      return (
+                        <div
+                          key={room.id}
+                          onClick={() => onOpenBookingModal(room)}
+                          className={`bg-white border rounded-xl p-4 transition-all cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md group ${
+                            isAvailable
+                              ? 'border-emerald-200 hover:border-emerald-400'
+                              : 'border-amber-200 hover:border-amber-400'
+                          }`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
+                                {room.code}
+                              </span>
+                              <span
+                                className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                                  isAvailable
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                }`}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-600' : 'bg-amber-600'}`} />
+                                {room.status}
+                              </span>
+                            </div>
+
+                            <div>
+                              <h4 className="font-bold text-slate-900 text-sm font-display group-hover:text-amber-700 transition">
+                                {room.name}
+                              </h4>
+                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                                {room.description}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-[11px] font-mono text-slate-600 pt-1">
+                              <span className="flex items-center gap-1">
+                                <Users className="w-3.5 h-3.5 text-amber-600" /> {room.capacity} seats
+                              </span>
+                              <span>·</span>
+                              <span className="font-semibold text-slate-900">Nu. {room.hourlyRate}/hr</span>
+                            </div>
+                          </div>
+
+                          <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                            <span className="text-[11px] font-mono text-slate-400">Click to book</span>
+                            <span className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center gap-1 shadow-xs">
+                              <span>Book Now</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tab Content 1: Overview */}
       {activeSubTab === 'overview' && (

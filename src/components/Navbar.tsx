@@ -14,7 +14,9 @@ import {
   LayoutDashboard,
   BedDouble,
   BookOpen,
-  Settings
+  Settings,
+  LogOut,
+  Lock
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -24,6 +26,8 @@ interface NavbarProps {
   setCurrentUser: (user: UserProfile) => void;
   unreadAlertCount: number;
   onOpenAlerts: () => void;
+  isAuthenticated: boolean;
+  onLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,45 +37,42 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentUser,
   unreadAlertCount,
   onOpenAlerts,
+  isAuthenticated,
+  onLogout,
 }) => {
   const [showRoleModal, setShowRoleModal] = useState(false);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'rooms', label: 'Room Booking', icon: Building2 },
-    { id: 'hostel', label: 'Trainee Hostel', icon: BedDouble },
-    { id: 'trainings', label: 'Training Schedule', icon: Calendar },
-    { id: 'attendance', label: 'Attendance Roll-Call', icon: UserCheck },
-    { id: 'publications', label: 'Research & Audits', icon: BookOpen },
-    { id: 'reports', label: 'Reports & Certificates', icon: FileSpreadsheet },
-    ...(currentUser.role === 'ADMIN' ? [{ id: 'admin-customizer', label: 'Facility & News Control', icon: Settings }] : []),
-    { id: 'agency-login', label: 'Agency Login', icon: Building2 },
-    { id: 'admin', label: 'Admin Login', icon: ShieldCheck },
-  ];
+  // If user is authenticated, show operational tabs. If unauthenticated, show ONLY login tabs.
+  const navItems = isAuthenticated
+    ? [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'rooms', label: 'Room Booking', icon: Building2 },
+        { id: 'hostel', label: 'Trainee Hostel', icon: BedDouble },
+        { id: 'trainings', label: 'Training Schedule', icon: Calendar },
+        { id: 'attendance', label: 'Attendance Roll-Call', icon: UserCheck },
+        { id: 'publications', label: 'Research & Audits', icon: BookOpen },
+        { id: 'reports', label: 'Reports & Certificates', icon: FileSpreadsheet },
+        ...(currentUser.role === 'ADMIN' ? [{ id: 'admin-customizer', label: 'Facility & News Control', icon: Settings }] : []),
+      ]
+    : [
+        { id: 'agency-login', label: 'Agency Representative Sign-In', icon: Building2 },
+        { id: 'admin', label: 'Director General Admin Sign-In', icon: ShieldCheck },
+      ];
 
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-        {/* Top Institutional Bhutan Header Accent */}
-        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-slate-950 px-6 py-1 flex items-center justify-between text-xs font-semibold shadow-xs">
-          <div className="flex items-center gap-2">
-            <span className="bg-slate-950 text-amber-300 text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded font-mono font-bold">
-              BHUTAN
-            </span>
-            <span className="tracking-wide">Professional Development Centre (PDC) · Royal Audit Authority (RAA) · Tsirang</span>
-          </div>
-          <div className="hidden md:flex items-center gap-4 text-[11px] font-mono text-slate-950 font-medium">
-            <span>Public Sector Accountability & Financial Integrity</span>
-            <span>·</span>
-            <span>PDC Tsirang Portal</span>
-          </div>
-        </div>
-
         {/* Top Bar Contract (3 Zones) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-6">
           {/* Zone 1: Brand Wordmark */}
           <button
-            onClick={() => setCurrentTab('dashboard')}
+            onClick={() => {
+              if (isAuthenticated) {
+                setCurrentTab('dashboard');
+              } else {
+                setCurrentTab('agency-login');
+              }
+            }}
             className="flex items-center gap-3 text-left focus:outline-none group shrink-0"
           >
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 text-slate-950 flex items-center justify-center font-bold text-lg font-display shadow-md group-hover:scale-105 transition-transform">
@@ -96,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => setCurrentTab(item.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
                     isActive
                       ? 'bg-slate-100 text-slate-900 font-extrabold border border-slate-200 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -114,40 +115,59 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* PWA Install Button */}
             <PWAInstallButton />
 
-            {/* Notification Alert Bell */}
-            <button
-              onClick={onOpenAlerts}
-              className="relative p-2 rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition border border-slate-200"
-              title="Urgent Alerts & Notifications"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadAlertCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold font-mono flex items-center justify-center shadow-xs">
-                  {unreadAlertCount}
-                </span>
-              )}
-            </button>
+            {isAuthenticated ? (
+              <>
+                {/* Notification Alert Bell */}
+                <button
+                  onClick={onOpenAlerts}
+                  className="relative p-2 rounded-lg bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition border border-slate-200"
+                  title="Urgent Alerts & Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadAlertCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold font-mono flex items-center justify-center shadow-xs">
+                      {unreadAlertCount}
+                    </span>
+                  )}
+                </button>
 
-            {/* User Profile / Role Switcher Trigger */}
-            <button
-              onClick={() => setShowRoleModal(true)}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg text-xs text-left transition"
-            >
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-6 h-6 rounded-full object-cover border border-amber-500 shrink-0"
-              />
-              <div className="hidden sm:block text-left">
-                <div className="font-semibold text-slate-900 text-xs truncate max-w-[120px]">
-                  {currentUser.name}
-                </div>
-                <div className="text-[10px] text-amber-700 font-mono font-bold truncate max-w-[120px]">
-                  {currentUser.role} · {currentUser.agencyCode}
-                </div>
+                {/* User Profile / Role Switcher Trigger */}
+                <button
+                  onClick={() => setShowRoleModal(true)}
+                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg text-xs text-left transition"
+                >
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-6 h-6 rounded-full object-cover border border-amber-500 shrink-0"
+                  />
+                  <div className="hidden sm:block text-left">
+                    <div className="font-semibold text-slate-900 text-xs truncate max-w-[120px]">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-[10px] text-amber-700 font-mono font-bold truncate max-w-[120px]">
+                      {currentUser.role} · {currentUser.agencyCode}
+                    </div>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                {/* Sign Out Button */}
+                <button
+                  onClick={onLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold text-xs transition"
+                  title="Sign Out of PDC Portal"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-red-600" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-amber-900">
+                <Lock className="w-3.5 h-3.5 text-amber-700" />
+                <span>Sign-In Required</span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-            </button>
+            )}
           </div>
         </div>
 

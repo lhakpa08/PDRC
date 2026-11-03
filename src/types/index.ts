@@ -64,7 +64,9 @@ export interface RoomBooking {
   agencyCode: string;
   bookedBy: string;
   contactEmail: string;
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD (maintained for backwards compatibility)
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
   expectedAttendees: number;
