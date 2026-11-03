@@ -1,0 +1,6 @@
+{
+  "name": "PDRC Tsirang - Room Booking & Training Coordination System",
+  "description": "Centralized room booking, training schedule coordination, attendance tracking, automated reporting, and real-time alert system for Professional Development & Research Centre at Tsirang, Bhutan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
